@@ -16,8 +16,6 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { makeData, Person } from "./makeData";
 
-//This is a dynamic row height example, which is more complicated, but allows for a more realistic table.
-//See https://tanstack.com/virtual/v3/docs/examples/react/table for a simpler fixed row height example.
 function App() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const columns = React.useMemo<ColumnDef<Person>[]>(
@@ -68,7 +66,13 @@ function App() {
 
   const [data] = React.useState(() => makeData(50_000));
 
-  // const dataWithExpandedRow = selectedIndex !== null ?
+  // Clone the data array
+  const dataWithExpandedRow = [...data];
+
+  if (selectedIndex !== null) {
+    // Clone the selected row and insert it into the array
+    dataWithExpandedRow.splice(selectedIndex, 0, { ...data[selectedIndex] });
+  }
 
   const table = useReactTable({
     data,
@@ -171,31 +175,16 @@ function App() {
               position: "relative", //needed for absolute positioning of rows
             }}
           >
-            {rowVirtualizer.getVirtualItems().map((virtualRow, index) => {
-              let extra = null;
-
-              if (selectedIndex === index) {
-                console.log('hi', index);
-                extra = (
-                  <div
-                    style={{
-                      display: 'flex',
-                      position: 'absolute',
-                      transform: `translateY(${virtualRow.start}px)`, //this should always be a `style` as it changes on scroll
-                      width: '100%',
-                    }}
-                  >
-                    <div>sup</div>
-                  </div>
-                );
-              }
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const row = rows[virtualRow.index] as Row<Person>;
               return (
                 <>
                   <div
                     data-index={virtualRow.index} //needed for dynamic row height measurement
                     ref={(node) => rowVirtualizer.measureElement(node)} //measure dynamic row height
-                    key={row.id}
+                    key={
+                      virtualRow.index === selectedIndex ? "expanded" : row.id
+                    }
                     style={{
                       display: "flex",
                       position: "absolute",
@@ -205,26 +194,29 @@ function App() {
                         virtualRow.index === selectedIndex ? 32 : undefined,
                     }}
                   >
-                    {row.getVisibleCells().map((cell) => {
-                      return (
-                        <div
-                          key={cell.id}
-                          style={{
-                            display: 'flex',
-                            width: cell.column.getSize(),
-                            cursor: 'pointer',
-                          }}
-                          onClick={() => setSelectedIndex(virtualRow.index)}
-                        >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </div>
-                      );
-                    })}
+                    {virtualRow.index !== selectedIndex ? (
+                      row.getVisibleCells().map((cell) => {
+                        return (
+                          <div
+                            key={cell.id}
+                            style={{
+                              display: "flex",
+                              width: cell.column.getSize(),
+                              cursor: "pointer",
+                            }}
+                            onClick={() => setSelectedIndex(virtualRow.index)}
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <DetailPanel />
+                    )}
                   </div>
-                  {extra}
                 </>
               );
             })}
@@ -235,6 +227,30 @@ function App() {
   );
 }
 
+const DetailPanel = ({}) => {
+  const [moreContent, setMoreContent] = useState<string>();
+  useEffect(() => {
+    // set a timer for 1000ms to add more fake content
+    const timer = setTimeout(() => {
+      setMoreContent("More dynamically resizing content");
+    }, 1000);
+    return () => clearTimeout(timer);
+  });
+  return (
+    <div
+      style={{
+        display: "block",
+        width: "100%",
+        cursor: "pointer",
+      }}
+    >
+      <>
+        Expanded detail panel
+        {moreContent ? <div>{moreContent}</div> : null}
+      </>
+    </div>
+  );
+};
 
 const rootElement = document.getElementById("root");
 
