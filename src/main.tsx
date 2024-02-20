@@ -74,7 +74,7 @@ function App() {
     debugTable: true,
   });
 
-  const { rows } = table.getRowModel();
+  const { rows } = useMemo(() => table.getRowModel(), [table]);
 
   //The virtualizer needs to know the scrollable container element
   const tableContainerRef = React.useRef<HTMLDivElement>(null);
@@ -170,6 +170,11 @@ function App() {
           >
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const row = rows[virtualRow.index] as Row<Person>;
+              // console.log(
+              //   "%c💣️ render row",
+              //   "background: aliceblue; color: dodgerblue; font-weight: bold",
+              //   virtualRow.index
+              // );
               // return <div key={virtualRow.key}>hi</div>;
               return (
                 <div
@@ -235,7 +240,7 @@ const DetailPanel = ({}) => {
     // set a timer for 1000ms to add more fake content
     const timer = setTimeout(() => {
       setMoreContent("More dynamically resizing content");
-    }, 1000);
+    }, 500);
     return () => clearTimeout(timer);
   });
   return (
