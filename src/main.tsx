@@ -66,17 +66,7 @@ function App() {
 
   const [data] = React.useState(() => makeData(50_000));
 
-  // const dataWithExpandedRow = useMemo(() => {
-  //   const _data = [...data];
-  //   if (selectedIndex !== null) {
-  //     // Clone the selected row and insert it into the array
-  //     _data.splice(selectedIndex, 0, { ...data[selectedIndex] });
-  //   }
-  //   return _data;
-  // }, [data, selectedIndex]);
-
   const table = useReactTable({
-    // data: dataWithExpandedRow,
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
@@ -238,57 +228,6 @@ function App() {
     </div>
   );
 }
-
-// const TableRows = ({
-//   rowVirtualizer,
-//   selectedIndex,
-//   setSelectedIndex,
-//   rows,
-// }: {
-//   rowVirtualizer: ReturnType<typeof useVirtualizer>;
-//   selectedIndex: number | null;
-//   setSelectedIndex: (arg0: number) => void;
-//   rows: Row<Person>[];
-// }) => {
-//   return rowVirtualizer.getVirtualItems().map((virtualRow) => {
-//     const row = rows[virtualRow.index] as Row<Person>;
-//     return (
-//       <div
-//         data-index={virtualRow.index} //needed for dynamic row height measurement
-//         ref={(node) => rowVirtualizer.measureElement(node)} //measure dynamic row height
-//         key={virtualRow.index === selectedIndex ? "expanded" : virtualRow.key}
-//         style={{
-//           display: "flex",
-//           position: "absolute",
-//           transform: `translateY(${virtualRow.start}px)`, //this should always be a `style` as it changes on scroll
-//           width: "100%",
-//           fontSize: virtualRow.index === selectedIndex ? 32 : undefined,
-//         }}
-//       >
-//         {virtualRow.index !== selectedIndex ? (
-//           row.getVisibleCells().map((cell) => {
-//             return (
-//               <div
-//                 key={cell.id}
-//                 style={{
-//                   display: "flex",
-//                   width: cell.column.getSize(),
-//                   cursor: "pointer",
-//                 }}
-//                 onClick={() => setSelectedIndex(virtualRow.index)}
-//               >
-//                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
-//               </div>
-//             );
-//           })
-//         ) : (
-//           <DetailPanel />
-//         )}
-//       </div>
-//     );
-//   });
-// };
-// TableRows.displayName = "TableRows";
 
 const DetailPanel = ({}) => {
   const [moreContent, setMoreContent] = useState<string>();
