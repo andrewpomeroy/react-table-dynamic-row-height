@@ -177,54 +177,16 @@ function App() {
               // );
               // return <div key={virtualRow.key}>hi</div>;
               return (
-                <div
-                  data-index={virtualRow.index} //needed for dynamic row height measurement
-                  ref={(node) => rowVirtualizer.measureElement(node)} //measure dynamic row height
+                <TableRow
+                  rows={rows}
                   key={virtualRow.key}
-                  style={{
-                    position: "absolute",
-                    width: "100%",
-                    transform: `translateY(${virtualRow.start}px)`, //this should always be a `style` as it changes on scroll
-                  }}
-                >
-                  <>
-                    <div
-                      style={{
-                        display: "flex",
-                      }}
-                    >
-                      <>
-                        {row.getVisibleCells().map((cell) => {
-                          return (
-                            <div
-                              key={cell.id}
-                              style={{
-                                display: "flex",
-                                width: cell.column.getSize(),
-                                cursor: "pointer",
-                              }}
-                              onClick={() =>
-                                setSelectedIndex((selectedIndex) =>
-                                  selectedIndex === virtualRow.index
-                                    ? null
-                                    : virtualRow.index
-                                )
-                              }
-                            >
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
-                              )}
-                            </div>
-                          );
-                        })}
-                      </>
-                    </div>
-                    {virtualRow.index === selectedIndex ? (
-                      <DetailPanel />
-                    ) : null}
-                  </>
-                </div>
+                  virtualRow={virtualRow}
+                  measureElement={rowVirtualizer.measureElement}
+                  start={virtualRow.start}
+                  selectedIndex={selectedIndex}
+                  setSelectedIndex={setSelectedIndex}
+                  expanded={virtualRow.index === selectedIndex}
+                />
               );
             })}
           </div>
@@ -233,6 +195,86 @@ function App() {
     </div>
   );
 }
+
+const TableRow = React.memo(
+  ({
+    rows,
+    virtualRow,
+    measureElement,
+    start,
+    expanded,
+    selectedIndex,
+    setSelectedIndex,
+  }: {
+    rows: Row<Person>[];
+    virtualRow: ReturnType<typeof useVirtualizer>["getVirtualItems"][number];
+    measureElement: ReturnType<typeof useVirtualizer>["measureElement"];
+    start: number;
+    expanded: boolean;
+    selectedIndex: number | null;
+    setSelectedIndex: React.Dispatch<React.SetStateAction<number | null>>;
+  }) => {
+    console.log(
+      "%c💣️ render row",
+      "background: aliceblue; color: dodgerblue; font-weight: bold",
+      virtualRow.index
+    );
+    useEffect(() => {
+      console.log("row mounted", virtualRow.index);
+      return () => {
+        console.log("row unmounted", virtualRow.index);
+      };
+    }, [virtualRow.index]);
+    const row = rows[virtualRow.index] as Row<Person>;
+    return (
+      <div
+        data-index={virtualRow.index} //needed for dynamic row height measurement
+        ref={(node) => measureElement(node)} //measure dynamic row height
+        // key={virtualRow.key}
+        key={row.id}
+        style={{
+          position: "absolute",
+          width: "100%",
+          transform: `translateY(${start}px)`, //this should always be a `style` as it changes on scroll
+        }}
+      >
+        <>
+          <div
+            style={{
+              display: "flex",
+            }}
+          >
+            <>
+              {row.getVisibleCells().map((cell) => {
+                return (
+                  <div
+                    key={cell.id}
+                    style={{
+                      display: "flex",
+                      width: cell.column.getSize(),
+                      cursor: "pointer",
+                    }}
+                    onClick={() =>
+                      setSelectedIndex((selectedIndex) =>
+                        selectedIndex === virtualRow.index
+                          ? null
+                          : virtualRow.index
+                      )
+                    }
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </div>
+                );
+              })}
+            </>
+          </div>
+          {expanded ? <DetailPanel /> : null}
+        </>
+      </div>
+    );
+  }
+);
+TableRow.displayName = "TableRow";
 
 const DetailPanel = ({}) => {
   const [moreContent, setMoreContent] = useState<string>();
