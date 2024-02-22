@@ -14,8 +14,9 @@ import {
 
 import {
   defaultRangeExtractor,
-  Range,
+  type Range,
   useVirtualizer,
+  type VirtualItem,
 } from "@tanstack/react-virtual";
 
 import { makeData, Person } from "./makeData";
@@ -88,35 +89,28 @@ function App() {
     estimateSize: () => 33, //estimate row height for accurate scrollbar dragging
     getScrollElement: () => tableContainerRef.current,
     getItemKey: useCallback((index: number) => rows[index].id, [rows]),
+    // Define the range of rows to render based on the scroll position
     rangeExtractor: useCallback(
       (range: Range) => {
         const next = new Set([
+          // Always render the expanded row
           ...(selectedIndex !== null ? [selectedIndex] : []),
+          // Fill in with default row-rendering logic
           ...defaultRangeExtractor(range),
         ]);
-        console.log(
-          "%c💣️ ...(selectedIndex !== null ? [selectedIndex] : []),",
-          "background: aliceblue; color: dodgerblue; font-weight: bold",
-          ...(selectedIndex !== null ? [selectedIndex] : [])
-        );
-        console.log(
-          "%c💣️ selectedIndex",
-          "background: aliceblue; color: dodgerblue; font-weight: bold",
-          selectedIndex
-        );
-        console.log(
-          "%c💣️ next",
-          "background: aliceblue; color: dodgerblue; font-weight: bold",
-          next
-        );
         return [...next].sort((a, b) => a - b);
       },
       [selectedIndex]
     ),
     //measure dynamic row height, except in firefox because it measures table border height incorrectly
+    // measureElement:
+    //   typeof window !== "undefined" &&
+    //   navigator.userAgent.indexOf("Firefox") === -1
+    //     ? (element) => element?.getBoundingClientRect().height
+    //     : undefined,
+    // Firefox fix not necessary since we're not working with table markup and its weird border behavior
     measureElement:
-      typeof window !== "undefined" &&
-      navigator.userAgent.indexOf("Firefox") === -1
+      typeof window !== "undefined"
         ? (element) => element?.getBoundingClientRect().height
         : undefined,
     overscan: 10,
@@ -142,7 +136,7 @@ function App() {
           height: "800px", //should be a fixed height
         }}
       >
-        {/* we must use CSS grid and flexbox for dynamic row heights */}
+        {/* we must use CSS grid and flexbox for dynamic row heights, HTML table layout doesn't work */}
         <div style={{ display: "grid" }} role="table">
           <div
             style={{
@@ -199,18 +193,12 @@ function App() {
           >
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const row = rows[virtualRow.index] as Row<Person>;
-              // console.log(
-              //   "%c💣️ render row",
-              //   "background: aliceblue; color: dodgerblue; font-weight: bold",
-              //   virtualRow.index
-              // );
-              // return <div key={virtualRow.key}>hi</div>;
               return (
                 <div
                   ref={(node) => rowVirtualizer.measureElement(node)}
                   data-index={virtualRow.index} //needed for dynamic row height measurement
-                  // ref={(node) => measureElement(node)} //measure dynamic row height
                   // key={virtualRow.key}
+                  // I read that using a stable id (instead of a virtual row id) helps us more solidly memoize the row renderer component
                   key={row.id}
                   style={{
                     position: "absolute",
@@ -223,8 +211,6 @@ function App() {
                     key={virtualRow.key}
                     virtualRow={virtualRow}
                     // measureElement={rowVirtualizer.measureElement}
-                    start={virtualRow.start}
-                    selectedIndex={selectedIndex}
                     setSelectedIndex={setSelectedIndex}
                     expanded={virtualRow.index === selectedIndex}
                   />
@@ -242,31 +228,14 @@ const TableRow = React.memo(
   ({
     rows,
     virtualRow,
-    measureElement,
-    start,
     expanded,
-    selectedIndex,
     setSelectedIndex,
   }: {
     rows: Row<Person>[];
-    virtualRow: ReturnType<typeof useVirtualizer>["getVirtualItems"][number];
-    measureElement: ReturnType<typeof useVirtualizer>["measureElement"];
-    start: number;
+    virtualRow: VirtualItem;
     expanded: boolean;
-    selectedIndex: number | null;
     setSelectedIndex: React.Dispatch<React.SetStateAction<number | null>>;
   }) => {
-    // console.log(
-    //   "%c💣️ render row",
-    //   "background: aliceblue; color: dodgerblue; font-weight: bold",
-    //   virtualRow.index
-    // );
-    // useEffect(() => {
-    //   console.log("row mounted", virtualRow.index);
-    //   return () => {
-    //     console.log("row unmounted", virtualRow.index);
-    //   };
-    // }, [virtualRow.index]);
     const row = rows[virtualRow.index] as Row<Person>;
     return (
       <>
@@ -306,10 +275,10 @@ const TableRow = React.memo(
 );
 TableRow.displayName = "TableRow";
 
-const DetailPanel = ({}) => {
+const DetailPanel = () => {
   const [moreContent, setMoreContent] = useState<string>();
+  // simulate dynamic content, like a network request
   useEffect(() => {
-    // set a timer for 1000ms to add more fake content
     const timer = setTimeout(() => {
       setMoreContent("More dynamically resizing content");
     }, 500);
