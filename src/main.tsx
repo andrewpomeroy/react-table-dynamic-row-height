@@ -70,6 +70,20 @@ function App() {
   );
 
   const [data] = React.useState(() => makeData(50_000));
+  const [revealedRowCount, setRevealedRowCount] = React.useState<number>(50);
+  const [lastVisibleRow, setLastVisibleRow] = React.useState<number>();
+
+  useEffect(() => {
+    let timeoutId: number;
+    if (lastVisibleRow && lastVisibleRow > revealedRowCount) {
+      timeoutId = setTimeout(() => {
+        setRevealedRowCount(revealedRowCount + 50);
+      }, 500);
+    }
+    return () => {
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+    }
+  }, [lastVisibleRow, revealedRowCount])
 
   const table = useReactTable({
     data,
@@ -92,6 +106,9 @@ function App() {
     // Define the range of rows to render based on the scroll position
     rangeExtractor: useCallback(
       (range: Range) => {
+        if (lastVisibleRow === undefined || range.endIndex > lastVisibleRow) {
+          setLastVisibleRow(range.endIndex);
+        }
         const next = new Set([
           // Always render the expanded row
           ...(selectedIndex !== null ? [selectedIndex] : []),
@@ -100,7 +117,7 @@ function App() {
         ]);
         return [...next].sort((a, b) => a - b);
       },
-      [selectedIndex]
+      [selectedIndex, lastVisibleRow]
     ),
     //measure dynamic row height, except in firefox because it measures table border height incorrectly
     // measureElement:
@@ -127,6 +144,8 @@ function App() {
         </p>
       ) : null}
       ({data.length} rows)
+      <div>Last row scrolled into view: {lastVisibleRow}</div>
+      <div>Rows loaded: {revealedRowCount}</div>
       <div
         className="container"
         ref={tableContainerRef}
@@ -213,6 +232,7 @@ function App() {
                     // measureElement={rowVirtualizer.measureElement}
                     setSelectedIndex={setSelectedIndex}
                     expanded={virtualRow.index === selectedIndex}
+                    isSkeletonRow={row.index > revealedRowCount}
                   />
                 </div>
               );
@@ -230,11 +250,13 @@ const TableRow = React.memo(
     virtualRow,
     expanded,
     setSelectedIndex,
+    isSkeletonRow,
   }: {
     rows: Row<Person>[];
     virtualRow: VirtualItem;
     expanded: boolean;
     setSelectedIndex: React.Dispatch<React.SetStateAction<number | null>>;
+    isSkeletonRow: boolean;
   }) => {
     const row = rows[virtualRow.index] as Row<Person>;
     return (
@@ -262,7 +284,7 @@ const TableRow = React.memo(
                     )
                   }
                 >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  {isSkeletonRow ? "---" : flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </div>
               );
             })}
