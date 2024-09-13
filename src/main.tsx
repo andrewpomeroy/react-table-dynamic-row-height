@@ -21,6 +21,8 @@ import {
 
 import { makeData, Person } from "./makeData";
 
+const RECORD_LOAD_INCREMENT = 150;
+
 function App() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const columns = React.useMemo<ColumnDef<Person>[]>(
@@ -70,14 +72,14 @@ function App() {
   );
 
   const [data] = React.useState(() => makeData(50_000));
-  const [revealedRowCount, setRevealedRowCount] = React.useState<number>(50);
+  const [revealedRowCount, setRevealedRowCount] = React.useState<number>(RECORD_LOAD_INCREMENT);
   const [lastVisibleRow, setLastVisibleRow] = React.useState<number>();
 
   useEffect(() => {
     let timeoutId: number;
     if (lastVisibleRow && lastVisibleRow > revealedRowCount) {
       timeoutId = setTimeout(() => {
-        setRevealedRowCount(revealedRowCount + 50);
+        setRevealedRowCount(revealedRowCount + RECORD_LOAD_INCREMENT);
       }, 500);
     }
     return () => {
